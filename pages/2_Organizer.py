@@ -4,6 +4,7 @@ import bcrypt
 import secrets
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from data.db import engine, SessionLocal, init_db
@@ -47,6 +48,28 @@ if not pwd_set:
             st.success("Admin password set")
 else:
     # If password is set, require login unless session says authed
+    # Sync from browser localStorage -> query param (for cloud sessions)
+    try:
+        components.html(
+            """
+            <script>
+            (function(){
+              try {
+                const url = new URL(window.location.href);
+                const tok = window.localStorage.getItem('orgToken');
+                if (tok && !url.searchParams.get('org')) {
+                  url.searchParams.set('org', tok);
+                  window.history.replaceState({}, '', url);
+                }
+              } catch (e) {}
+            })();
+            </script>
+            """,
+            height=0,
+        )
+    except Exception:
+        pass
+
     # Auto-login via session token or query param token if present and valid
     if not st.session_state.get("admin_authed", False):
         try:
@@ -101,6 +124,10 @@ else:
                         set_setting('admin_auto_token_hash', token_hash)
                         st.session_state["org_token"] = token
                         try:
+                            components.html(f"<script>try{{window.localStorage.setItem('orgToken','{token}')}}catch(e){{}}</script>", height=0)
+                        except Exception:
+                            pass
+                        try:
                             st.query_params["org"] = token
                         except Exception:
                             try:
@@ -110,6 +137,10 @@ else:
                     else:
                         set_setting('admin_auto_token_hash', "")
                         st.session_state.pop("org_token", None)
+                        try:
+                            components.html("<script>try{window.localStorage.removeItem('orgToken')}catch(e){}</script>", height=0)
+                        except Exception:
+                            pass
                         try:
                             st.query_params.pop("org", None)
                         except Exception:
@@ -133,6 +164,10 @@ else:
                 try:
                     set_setting('admin_auto_token_hash', "")
                     st.session_state.pop("org_token", None)
+                    try:
+                        components.html("<script>try{window.localStorage.removeItem('orgToken')}catch(e){}</script>", height=0)
+                    except Exception:
+                        pass
                     st.query_params.clear()
                 except Exception:
                     try:
