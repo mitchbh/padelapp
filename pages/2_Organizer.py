@@ -129,20 +129,18 @@ else:
                         set_setting('admin_auto_token_hash', token_hash)
                         st.session_state["org_token"] = token
                         try:
-                            components.html(
-                                f"""
+                            js = """
                                 <script>
                                   try {
-                                    window.localStorage.setItem('orgToken','{token}');
+                                    window.localStorage.setItem('orgToken','%s');
                                     // 180 days cookie
                                     var d=new Date();
                                     d.setTime(d.getTime()+ (180*24*60*60*1000));
-                                    document.cookie = 'orgToken={token}; expires='+d.toUTCString()+'; path=/; SameSite=Lax';
+                                    document.cookie = 'orgToken=%s; expires='+d.toUTCString()+'; path=/; SameSite=Lax';
                                   } catch(e) {}
                                 </script>
-                                """,
-                                height=1
-                            )
+                            """ % (token, token)
+                            components.html(js, height=1)
                         except Exception:
                             pass
                         try:
