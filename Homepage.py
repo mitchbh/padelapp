@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import text
 from data.db import engine
 
-st.set_page_config(page_title="Padel Tournamemt Application", page_icon="🎾", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Padel Tournamemt Application", page_icon="🎾", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown(
     """
