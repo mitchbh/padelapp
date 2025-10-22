@@ -55,17 +55,22 @@ else:
             <script>
             (function(){
               try {
+                const getCookie = (n) => {
+                  const m = document.cookie.match(new RegExp('(^| )'+n+'=([^;]+)'));
+                  return m ? decodeURIComponent(m[2]) : null;
+                };
                 const url = new URL(window.location.href);
-                const tok = window.localStorage.getItem('orgToken');
+                let tok = window.localStorage.getItem('orgToken') || getCookie('orgToken');
                 if (tok && !url.searchParams.get('org')) {
                   url.searchParams.set('org', tok);
-                  window.history.replaceState({}, '', url);
+                  // Force a full reload so Streamlit server sees the param immediately
+                  window.location.replace(url.toString());
                 }
               } catch (e) {}
             })();
             </script>
             """,
-            height=0,
+            height=1,
         )
     except Exception:
         pass
@@ -124,7 +129,20 @@ else:
                         set_setting('admin_auto_token_hash', token_hash)
                         st.session_state["org_token"] = token
                         try:
-                            components.html(f"<script>try{{window.localStorage.setItem('orgToken','{token}')}}catch(e){{}}</script>", height=0)
+                            components.html(
+                                f"""
+                                <script>
+                                  try {
+                                    window.localStorage.setItem('orgToken','{token}');
+                                    // 180 days cookie
+                                    var d=new Date();
+                                    d.setTime(d.getTime()+ (180*24*60*60*1000));
+                                    document.cookie = 'orgToken={token}; expires='+d.toUTCString()+'; path=/; SameSite=Lax';
+                                  } catch(e) {}
+                                </script>
+                                """,
+                                height=1
+                            )
                         except Exception:
                             pass
                         try:
@@ -138,7 +156,17 @@ else:
                         set_setting('admin_auto_token_hash', "")
                         st.session_state.pop("org_token", None)
                         try:
-                            components.html("<script>try{window.localStorage.removeItem('orgToken')}catch(e){}</script>", height=0)
+                            components.html(
+                                """
+                                <script>
+                                  try {
+                                    window.localStorage.removeItem('orgToken');
+                                    document.cookie = 'orgToken=; Max-Age=0; path=/; SameSite=Lax';
+                                  } catch(e) {}
+                                </script>
+                                """,
+                                height=1
+                            )
                         except Exception:
                             pass
                         try:
@@ -165,7 +193,17 @@ else:
                     set_setting('admin_auto_token_hash', "")
                     st.session_state.pop("org_token", None)
                     try:
-                        components.html("<script>try{window.localStorage.removeItem('orgToken')}catch(e){}</script>", height=0)
+                        components.html(
+                            """
+                            <script>
+                              try {
+                                window.localStorage.removeItem('orgToken');
+                                document.cookie = 'orgToken=; Max-Age=0; path=/; SameSite=Lax';
+                              } catch(e) {}
+                            </script>
+                            """,
+                            height=1
+                        )
                     except Exception:
                         pass
                     st.query_params.clear()
